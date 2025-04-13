@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superior University Admission Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .chat-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.4;
+            position: relative;
+        }
+        
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .bot-message {
+            background-color: #f1f1f1;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .sentiment-positive {
+            background-color: #e8f5e9;
+        }
+        
+        .sentiment-negative {
+            background-color: #ffebee;
+        }
+        
+        .sentiment-neutral {
+            background-color: #e3f2fd;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #eee;
+            background-color: white;
+        }
+        
+        #user-input, #sentiment-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            outline: none;
+            font-size: 1rem;
+        }
+        
+        #send-btn, #analyze-btn {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        #send-btn:hover, #analyze-btn:hover {
+            background-color: #1a252f;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .typing-indicator {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #f1f1f1;
+            border-radius: 18px;
+            margin-bottom: 15px;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #777;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: typing 1s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0% { opacity: 0.4; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-3px); }
+            100% { opacity: 0.4; transform: translateY(0); }
+        }
+        
+        .welcome-message {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                Superior University Admission Chatbot
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="welcome-message">
+                    Welcome to Superior University Admissions! How can I help you today?
+                </div>
+                <div class="message bot-message">
+                    Hello! I can assist you with information about programs, admission requirements, scholarships, and more. Type "sentiment" if you'd like to analyze a sentence's sentiment.
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="user-input" placeholder="Type your message here...">
+                <button id="send-btn">Send</button>
+                
+                <input type="text" id="sentiment-input" class="hidden" placeholder="Type sentence to analyze...">
+                <button id="analyze-btn" class="hidden">Analyze</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const sentimentInput = document.getElementById('sentiment-input');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        
+        let sentimentMode = false;
+        
+        function addMessage(text, isUser, sentiment = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            
+            if (isUser) {
+                messageDiv.classList.add('user-message');
+                messageDiv.textContent = text;
+            } else {
+                messageDiv.classList.add('bot-message');
+                if (sentiment) {
+                    messageDiv.classList.add(`sentiment-${sentiment.toLowerCase()}`);
+                }
+                messageDiv.textContent = text;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('typing-indicator');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+            
+            addMessage(message, true);
+            userInput.value = '';
+            
+            showTypingIndicator();
+            
+            if (sentimentMode) {
+                // Handle sentiment analysis
+                fetch('/get_response', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `sentiment_input=${encodeURIComponent(message)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideTypingIndicator();
+                    addMessage(data.response, false, data.sentiment_result);
+                    exitSentimentMode();
+                });
+            } else {
+                // Handle normal chatbot response
+                if (message.toLowerCase() === 'sentiment') {
+                    hideTypingIndicator();
+                    enterSentimentMode();
+                    return;
+                }
+                
+                fetch('/get_response', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `user_input=${encodeURIComponent(message)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    hideTypingIndicator();
+                    addMessage(data.response, false);
+                    
+                    if (data.sentiment_mode) {
+                        enterSentimentMode();
+                    }
+                });
+            }
+        }
+        
+        function enterSentimentMode() {
+            sentimentMode = true;
+            userInput.classList.add('hidden');
+            sendBtn.classList.add('hidden');
+            sentimentInput.classList.remove('hidden');
+            analyzeBtn.classList.remove('hidden');
+            sentimentInput.focus();
+        }
+        
+        function exitSentimentMode() {
+            sentimentMode = false;
+            userInput.classList.remove('hidden');
+            sendBtn.classList.remove('hidden');
+            sentimentInput.classList.add('hidden');
+            analyzeBtn.classList.add('hidden');
+            userInput.focus();
+        }
+        
+        // Event listeners
+        sendBtn.addEventListener('click', sendMessage);
+        analyzeBtn.addEventListener('click', sendMessage);
+        
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        sentimentInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
